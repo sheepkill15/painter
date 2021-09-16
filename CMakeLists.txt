@@ -10,3 +10,5 @@ target_link_libraries(painter sfml-graphics sfml-window sfml-system)
 add_custom_command(TARGET painter POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/res/ $<TARGET_FILE_DIR:painter>/res/)
+
+add_subdirectory(third_party)

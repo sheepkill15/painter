@@ -1,6 +1,8 @@
 #include <iostream>
 //#include <cmath>
 #include <SFML/Graphics.hpp>
+#include <imgui.h>
+#include <imgui-SFML.h>
 
 const int radius = 5;
 
@@ -101,6 +103,12 @@ int main() {
     sf::RenderWindow window(sf::VideoMode(800, 600), "Painter");
     window.setVerticalSyncEnabled(true); // call it once, after creating the window
 
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+//    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable some options
+
+    ImGui::SFML::Init(window);
+
     sf::Texture texture;
     if(!texture.loadFromFile("res/random.jpg")) {
         std::cout << "Something went wrong" << std::endl;
@@ -116,12 +124,15 @@ int main() {
     line(image, sf::Vector2i(10, 100), sf::Vector2i(50, 100));
     texture.loadFromImage(image);
     sf::Vector2i prev_move_pos(0, 0);
+    sf::Clock deltaClock;
     while(window.isOpen()) {
         sf::Event event{};
         while(window.pollEvent(event)) {
+            ImGui::SFML::ProcessEvent(event);
             if(event.type == sf::Event::Closed)
                 window.close();
-            else if(event.type == sf::Event::MouseButtonPressed) {
+            if(io.WantCaptureMouse) continue;
+            if(event.type == sf::Event::MouseButtonPressed) {
                 if(event.mouseButton.button == sf::Mouse::Middle) {
                     prev_pos = sf::Mouse::getPosition(window);
                     pressed = true;
@@ -166,10 +177,19 @@ tex_pos.y = (int)((float)tex_pos.y / sprite.getScale().y);
                 window.setView(sf::View(visibleArea));
             }
         }
+
+        ImGui::SFML::Update(window, deltaClock.restart());
+
         window.clear(sf::Color::Black);
         window.draw(sprite);
+        ImGui::Begin("Lol");
+        ImGui::Text("Hello");
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::End();
+        ImGui::SFML::Render(window);
+
         window.display();
     }
-
+    ImGui::SFML::Shutdown();
     return 0;
 }
