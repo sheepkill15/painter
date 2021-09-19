@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 project(painter)
 
 set(CMAKE_CXX_STANDARD 17)
-add_executable(painter main.cpp)
+add_executable(painter src/main.cpp src/canvas/canvas.cpp src/canvas/canvas.h)
 
 find_package(SFML 2.5.1 COMPONENTS graphics window system REQUIRED)
 target_link_libraries(painter sfml-graphics sfml-window sfml-system)

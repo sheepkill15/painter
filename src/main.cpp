@@ -3,13 +3,39 @@
 #include <SFML/Graphics.hpp>
 #include <imgui.h>
 #include <imgui-SFML.h>
+#include "canvas/canvas.h"
 
 int radius = 5;
 ImColor brush_color;
 
-void circle(sf::Image& image, const sf::Vector2i& pos) {
-    int width = (int)image.getSize().x;
-    int height = (int)image.getSize().y;
+int calculate_y_from_x(int x, int a, int b, int c) {
+    return (-x * a - c) / b;
+}
+
+int calculate_x_from_y(int y, int a, int b, int c) {
+    return (y * b + c) / -a;
+}
+
+void rectangle_line(Canvas& canvas, sf::Vector2i pos1, sf::Vector2i pos2) {
+    pos1 = canvas.transform_pos(pos1);
+    pos2 = canvas.transform_pos(pos2);
+    const int a = pos1.y - pos2.y;
+    const int b = pos2.x - pos1.x;
+    const int c = pos1.x * pos2.y - pos2.x * pos1.y;
+    for(int y = pos1.y - radius / 2; y <= pos2.y + radius / 2; y++) {
+        int curr_x = a ? calculate_x_from_y(y, a, b, c) : pos1.x - 2 * radius;
+        for(int x = pos1.x - radius / 2; x <= pos2.x + radius / 2; x++) {
+            int curr_y = b ? calculate_y_from_x(x, a, b, c) : pos1.y - 2 * radius;
+            if(std::abs(curr_y - y) <= radius || std::abs(curr_x - x) <= radius) {
+                canvas.setPixel(x, y, sf::Color(brush_color.Value.x * 255, brush_color.Value.y * 255, brush_color.Value.z * 255), true);
+            }
+        }
+    }
+}
+
+void circle(Canvas& canvas, const sf::Vector2i& pos, bool transformed = false) {
+    int width = (int)canvas.getSize().x;
+    int height = (int)canvas.getSize().y;
     sf::Vector2i cursor = pos;
 
     for(int i = std::max(0, cursor.y - radius); i <= std::min(height -1, cursor.y + radius); i++) {
@@ -17,21 +43,18 @@ void circle(sf::Image& image, const sf::Vector2i& pos) {
         for(int j = std::max(0, cursor.x - radius); j <= std::min(width -1, cursor.x + radius); j++) {
             int j_ = j - cursor.x;
             if(i_*i_ + j_*j_ < radius*radius) {
-                image.setPixel(j, i, sf::Color(brush_color.Value.x * 255, brush_color.Value.y * 255, brush_color.Value.z * 255));
+                canvas.setPixel(j, i, sf::Color(brush_color.Value.x * 255, brush_color.Value.y * 255, brush_color.Value.z * 255), transformed);
             }
         }
     }
 }
 
-int calculate_y_from_x(int x, int a, int b, int c) {
-    return (-x * a - c) / b;
-}
 
 int sign(int x) {
     return (x>>31)|(!!x);
 }
 
-void draw_line(sf::Image& image, const sf::Vector2i& pos1, const sf::Vector2i& pos2, const int a, const int b, const int c) {
+void draw_line(Canvas& canvas, const sf::Vector2i& pos1, const sf::Vector2i& pos2, const int a, const int b, const int c) {
     int prev_y = pos1.y;
     const int sgn_x = sign(pos2.x - pos1.x);
     const int sgn_y = sign(pos2.y - pos1.y);
@@ -40,18 +63,18 @@ void draw_line(sf::Image& image, const sf::Vector2i& pos1, const sf::Vector2i& p
     {
         int curr_y = calculate_y_from_x(pos1.x + i, a, b, c);
         for(int j = prev_y; std::abs(curr_y - j) > 0; j += sgn_y) {
-            image.setPixel(pos1.x + i, j, sf::Color(brush_color.Value.x * 255, brush_color.Value.y * 255, brush_color.Value.z * 255));
+            canvas.setPixel(pos1.x + i, j, sf::Color(brush_color.Value.x * 255, brush_color.Value.y * 255, brush_color.Value.z * 255), true);
         }
-        image.setPixel(pos1.x + i, curr_y, sf::Color(brush_color.Value.x * 255, brush_color.Value.y * 255, brush_color.Value.z * 255));
+        canvas.setPixel(pos1.x + i, curr_y, sf::Color(brush_color.Value.x * 255, brush_color.Value.y * 255, brush_color.Value.z * 255), true);
         prev_y = curr_y;
     }
     for(int j = prev_y; std::abs(pos2.y - j) > 0; j += sgn_y) {
-        image.setPixel(pos2.x, j, sf::Color(brush_color.Value.x * 255, brush_color.Value.y * 255, brush_color.Value.z * 255));
+        canvas.setPixel(pos2.x, j, sf::Color(brush_color.Value.x * 255, brush_color.Value.y * 255, brush_color.Value.z * 255), true);
     }
-    image.setPixel(pos2.x, pos2.y, sf::Color(brush_color.Value.x * 255, brush_color.Value.y * 255, brush_color.Value.z * 255));
+    canvas.setPixel(pos2.x, pos2.y, sf::Color(brush_color.Value.x * 255, brush_color.Value.y * 255, brush_color.Value.z * 255), true);
 }
 
-void line(sf::Image& image, const sf::Vector2i& pos1, const sf::Vector2i& pos2) {
+void line(Canvas& canvas, const sf::Vector2i& pos1, const sf::Vector2i& pos2) {
     // calculate equation of the line
     const int a = pos1.y - pos2.y;
     const int b = pos2.x - pos1.x;
@@ -60,7 +83,7 @@ void line(sf::Image& image, const sf::Vector2i& pos1, const sf::Vector2i& pos2) 
     const int dx = pos1.x - pos2.x;
     const int dy = pos1.y - pos2.y;
     const double dist = std::sqrt(dx * dx + dy * dy);
-
+    if(dist == 0) return;
     const float normX = dx / dist;
     const float normY = dy / dist;
 
@@ -84,7 +107,7 @@ void line(sf::Image& image, const sf::Vector2i& pos1, const sf::Vector2i& pos2) 
             const int par_a = p_pos1.y - p_pos2.y;
             const int par_b = p_pos2.x - p_pos1.x;
             const int par_c = p_pos1.x * p_pos2.y - p_pos2.x * p_pos1.y;
-            draw_line(image, p_pos1, p_pos2, par_a, par_b, par_c);
+            draw_line(canvas, p_pos1, p_pos2, par_a, par_b, par_c);
         }
 
         p_pos1 = sf::Vector2i(pos1.x + i + yPerp, curr_y - xPerp);
@@ -92,7 +115,7 @@ void line(sf::Image& image, const sf::Vector2i& pos1, const sf::Vector2i& pos2) 
         const int par_a = p_pos1.y - p_pos2.y;
         const int par_b = p_pos2.x - p_pos1.x;
         const int par_c = p_pos1.x * p_pos2.y - p_pos2.x * p_pos1.y;
-        draw_line(image, p_pos1, p_pos2, par_a, par_b, par_c);
+        draw_line(canvas, p_pos1, p_pos2, par_a, par_b, par_c);
         prev_y = curr_y;
     }
     for(int j = prev_y; std::abs(pos2.y - j) > 0; j += sgn_y) {
@@ -102,7 +125,7 @@ void line(sf::Image& image, const sf::Vector2i& pos1, const sf::Vector2i& pos2) 
         const int par_a = p_pos1.y - p_pos2.y;
         const int par_b = p_pos2.x - p_pos1.x;
         const int par_c = p_pos1.x * p_pos2.y - p_pos2.x * p_pos1.y;
-        draw_line(image, p_pos1, p_pos2, par_a, par_b, par_c);
+        draw_line(canvas, p_pos1, p_pos2, par_a, par_b, par_c);
     }
 
     p_pos1 = sf::Vector2i(pos2.x + yPerp, pos2.y - xPerp);
@@ -110,9 +133,10 @@ void line(sf::Image& image, const sf::Vector2i& pos1, const sf::Vector2i& pos2) 
     const int par_a = p_pos1.y - p_pos2.y;
     const int par_b = p_pos2.x - p_pos1.x;
     const int par_c = p_pos1.x * p_pos2.y - p_pos2.x * p_pos1.y;
-    draw_line(image, p_pos1, p_pos2, par_a, par_b, par_c);
+    draw_line(canvas, p_pos1, p_pos2, par_a, par_b, par_c);
 
-    circle(image, pos1);
+    circle(canvas, pos1, true);
+    circle(canvas, pos2, true);
 }
 
 int main() {
@@ -125,22 +149,19 @@ int main() {
 
     ImGui::SFML::Init(window);
 
-    sf::Texture texture;
-    if(!texture.loadFromFile("res/random.jpg")) {
-        std::cout << "Something went wrong" << std::endl;
-    }
+    Canvas canvas("res/random.jpg");
+//
+//    rectangle_line(canvas, {50, 200}, {100, 200});
+//    canvas.apply();
 
-    sf::Sprite sprite;
-    sprite.setTexture(texture);
     brush_color = ImColor(1, 1, 1);
     sf::Vector2i prev_pos(0, 0);
     bool left_pressed = false;
     bool pressed = false;
-    auto image = texture.copyToImage();
-    texture.loadFromImage(image);
+
     sf::Vector2i prev_move_pos(0, 0);
     sf::Clock deltaClock;
-
+    sf::Vector2i size = canvas.getSize();
     while(window.isOpen()) {
         sf::Event event{};
         while(window.pollEvent(event)) {
@@ -153,14 +174,11 @@ int main() {
                     prev_pos = sf::Mouse::getPosition(window);
                     pressed = true;
                 } else if(event.mouseButton.button == sf::Mouse::Left) {
-//                    circle(texture, sprite, sf::Mouse::getPosition(window) - (sf::Vector2i)sprite.getPosition());
-sf::Vector2i tex_pos = sf::Mouse::getPosition(window) - (sf::Vector2i)sprite.getPosition();
-tex_pos.x = (int)((float)tex_pos.x / sprite.getScale().x);
-tex_pos.y = (int)((float)tex_pos.y / sprite.getScale().y);
+                    sf::Vector2i tex_pos = sf::Mouse::getPosition(window);
                     prev_move_pos = tex_pos;
                     left_pressed = true;
-                    circle(image, tex_pos);
-                    texture.loadFromImage(image);
+                    circle(canvas, tex_pos);
+                    canvas.apply();
                 }
             }
             else if(event.type == sf::Event::MouseButtonReleased) {
@@ -173,20 +191,19 @@ tex_pos.y = (int)((float)tex_pos.y / sprite.getScale().y);
             else if(event.type == sf::Event::MouseMoved) {
                 if(pressed) {
                     sf::Vector2i tex_pos = sf::Mouse::getPosition(window);
-                    sprite.move((float)(tex_pos.x - prev_pos.x), (float)(tex_pos.y - prev_pos.y));
+                    canvas.move({(tex_pos.x - prev_pos.x), (tex_pos.y - prev_pos.y)});
                     prev_pos = tex_pos;
                 } else if(left_pressed) {
-                    sf::Vector2i tex_pos = sf::Mouse::getPosition(window) - (sf::Vector2i)sprite.getPosition();
-                    tex_pos.x = (int)((float)tex_pos.x / sprite.getScale().x);
-                    tex_pos.y = (int)((float)tex_pos.y / sprite.getScale().y);
-//                    circle(texture, sprite, sf::Mouse::getPosition(window) - (sf::Vector2i)sprite.getPosition());
-                    line(image, prev_move_pos, tex_pos);
-                    texture.loadFromImage(image);
+                    sf::Vector2i tex_pos = sf::Mouse::getPosition(window);
+//                    circle(canvas, sf::Mouse::getPosition(window));
+                    line(canvas, canvas.transform_pos(prev_move_pos), canvas.transform_pos(tex_pos));
+//                    rectangle_line(canvas, prev_move_pos, tex_pos);
+canvas.apply();
                     prev_move_pos = tex_pos;
                 }
             }
             else if(event.type == sf::Event::MouseWheelScrolled) {
-                sprite.scale(event.mouseWheelScroll.delta / 10.f + 1, event.mouseWheelScroll.delta / 10.f + 1);
+                canvas.scale(event.mouseWheelScroll.delta);
             }
             else if (event.type == sf::Event::Resized)
             {
@@ -199,9 +216,13 @@ tex_pos.y = (int)((float)tex_pos.y / sprite.getScale().y);
         ImGui::SFML::Update(window, deltaClock.restart());
 
         window.clear(sf::Color::Black);
-        window.draw(sprite);
+        canvas.draw(window);
         ImGui::Begin("Lol");
         ImGui::Text("Hello");
+        ImGui::InputInt2("Size of canvas", &size.x);
+        if(ImGui::Button("Commit size (resize)")) {
+            canvas.resize(size);
+        }
         ImGui::SliderInt("Radius of line", &radius, 0, 100);
         ImGui::ColorPicker3("Brush color", &brush_color.Value.x);
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
