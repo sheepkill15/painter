@@ -1,10 +1,11 @@
 #include <iostream>
-//#include <cmath>
+#include <cmath>
 #include <SFML/Graphics.hpp>
 #include <imgui.h>
 #include <imgui-SFML.h>
 
-const int radius = 5;
+int radius = 5;
+ImColor brush_color;
 
 void circle(sf::Image& image, const sf::Vector2i& pos) {
     int width = (int)image.getSize().x;
@@ -16,87 +17,102 @@ void circle(sf::Image& image, const sf::Vector2i& pos) {
         for(int j = std::max(0, cursor.x - radius); j <= std::min(width -1, cursor.x + radius); j++) {
             int j_ = j - cursor.x;
             if(i_*i_ + j_*j_ < radius*radius) {
-                image.setPixel(j, i, sf::Color::White);
+                image.setPixel(j, i, sf::Color(brush_color.Value.x * 255, brush_color.Value.y * 255, brush_color.Value.z * 255));
             }
         }
     }
 }
 
 int calculate_y_from_x(int x, int a, int b, int c) {
-    return (x * b + c) / a;
+    return (-x * a - c) / b;
 }
 
 int sign(int x) {
     return (x>>31)|(!!x);
 }
 
-void line(sf::Image& image, const sf::Vector2i& pos1, const sf::Vector2i& pos2) {
-    // calculate equation of the line
-    const int a = pos2.x - pos1.x;
-    const int b = pos2.y - pos1.y;
-    const int c = -pos1.x * pos2.y + pos2.x * pos1.y;
-
+void draw_line(sf::Image& image, const sf::Vector2i& pos1, const sf::Vector2i& pos2, const int a, const int b, const int c) {
     int prev_y = pos1.y;
-    const int sgn_x = sign(a);
-    const int sgn_y = sign(b);
+    const int sgn_x = sign(pos2.x - pos1.x);
+    const int sgn_y = sign(pos2.y - pos1.y);
 
-//    const float angle = std::atan2((float)b, (float)a);
-//    std::cout << angle << std::endl;
-//    const bool dir = (std::abs(angle) <= M_PI_4) || (std::abs(angle) >= M_PI - M_PI_4);
-//    bool dir = true;
-    for(int i = 0; std::abs(a - i) > 0; i+=sgn_x)
+    for(int i = 0; std::abs(pos2.x - pos1.x - i) > 0; i+=sgn_x)
     {
         int curr_y = calculate_y_from_x(pos1.x + i, a, b, c);
         for(int j = prev_y; std::abs(curr_y - j) > 0; j += sgn_y) {
-//            if(dir) { // y
-//                for(int y = j - radius; y <= j + radius; y++) {
-//                    image.setPixel(pos1.x + i, y, sf::Color::White);
-//                }
-//            } else {
-//                for(int x = i - radius; x <= i + radius; x++) {
-//                    image.setPixel(pos1.x + x, j, sf::Color::White);
-//                }
-//            }
-                circle(image, {pos1.x + i, j});
-//            image.setPixel(pos1.x + i, j, sf::Color::White);
+            image.setPixel(pos1.x + i, j, sf::Color(brush_color.Value.x * 255, brush_color.Value.y * 255, brush_color.Value.z * 255));
         }
-//        if(dir) { // y
-//            for(int y = curr_y - radius; y <= curr_y + radius; y++) {
-//                image.setPixel(pos1.x + i, y, sf::Color::White);
-//            }
-//        } else {
-//            for(int x = i - radius; x <= i + radius; x++) {
-//                image.setPixel(pos1.x + x, curr_y, sf::Color::White);
-//            }
-//        }
-        circle(image, {pos1.x + i, curr_y});
-//        image.setPixel(pos1.x + i, curr_y, sf::Color::White);
+        image.setPixel(pos1.x + i, curr_y, sf::Color(brush_color.Value.x * 255, brush_color.Value.y * 255, brush_color.Value.z * 255));
         prev_y = curr_y;
     }
     for(int j = prev_y; std::abs(pos2.y - j) > 0; j += sgn_y) {
-//        if(dir) { // y
-//            for(int y = j - radius; y <= j + radius; y++) {
-//                image.setPixel(pos2.x, y, sf::Color::White);
-//            }
-//        } else {
-//            for(int x = pos2.x - radius; x <= pos2.x + radius; x++) {
-//                image.setPixel(x, j, sf::Color::White);
-//            }
-//        }
-        circle(image, {pos2.x, j});
-//        image.setPixel(pos2.x, j, sf::Color::White);
+        image.setPixel(pos2.x, j, sf::Color(brush_color.Value.x * 255, brush_color.Value.y * 255, brush_color.Value.z * 255));
     }
-//    if(dir) { // y
-//        for(int y = pos2.y - radius; y <= pos2.y + radius; y++) {
-//            image.setPixel(pos2.x, y, sf::Color::White);
-//        }
-//    } else {
-//        for(int x = pos2.x - radius; x <= pos2.x + radius; x++) {
-//            image.setPixel(x, pos2.y, sf::Color::White);
-//        }
-//    }
-        circle(image, pos2);
-//    image.setPixel(pos2.x, pos2.y, sf::Color::White);
+    image.setPixel(pos2.x, pos2.y, sf::Color(brush_color.Value.x * 255, brush_color.Value.y * 255, brush_color.Value.z * 255));
+}
+
+void line(sf::Image& image, const sf::Vector2i& pos1, const sf::Vector2i& pos2) {
+    // calculate equation of the line
+    const int a = pos1.y - pos2.y;
+    const int b = pos2.x - pos1.x;
+    const int c = pos1.x * pos2.y - pos2.x * pos1.y;
+
+    const int dx = pos1.x - pos2.x;
+    const int dy = pos1.y - pos2.y;
+    const double dist = std::sqrt(dx * dx + dy * dy);
+
+    const float normX = dx / dist;
+    const float normY = dy / dist;
+
+    const int xPerp = radius * normX;
+    const int yPerp = radius * normY;
+
+    sf::Vector2i p_pos1;
+    sf::Vector2i p_pos2;
+
+    int prev_y = pos1.y;
+    const int sgn_x = sign(pos2.x - pos1.x);
+    const int sgn_y = sign(pos2.y - pos1.y);
+
+    for(int i = 0; std::abs(pos2.x - pos1.x - i) > 0; i+=sgn_x)
+    {
+        int curr_y = calculate_y_from_x(pos1.x + i, a, b, c);
+        for(int j = prev_y; std::abs(curr_y - j) > 0; j += sgn_y) {
+
+            p_pos1 = sf::Vector2i(pos1.x + i + yPerp, j - xPerp);
+            p_pos2 = sf::Vector2i(pos1.x + i - yPerp, j + xPerp);
+            const int par_a = p_pos1.y - p_pos2.y;
+            const int par_b = p_pos2.x - p_pos1.x;
+            const int par_c = p_pos1.x * p_pos2.y - p_pos2.x * p_pos1.y;
+            draw_line(image, p_pos1, p_pos2, par_a, par_b, par_c);
+        }
+
+        p_pos1 = sf::Vector2i(pos1.x + i + yPerp, curr_y - xPerp);
+        p_pos2 = sf::Vector2i(pos1.x + i - yPerp, curr_y + xPerp);
+        const int par_a = p_pos1.y - p_pos2.y;
+        const int par_b = p_pos2.x - p_pos1.x;
+        const int par_c = p_pos1.x * p_pos2.y - p_pos2.x * p_pos1.y;
+        draw_line(image, p_pos1, p_pos2, par_a, par_b, par_c);
+        prev_y = curr_y;
+    }
+    for(int j = prev_y; std::abs(pos2.y - j) > 0; j += sgn_y) {
+
+        p_pos1 = sf::Vector2i(pos2.x + yPerp, j - xPerp);
+        p_pos2 = sf::Vector2i(pos2.x - yPerp, j + xPerp);
+        const int par_a = p_pos1.y - p_pos2.y;
+        const int par_b = p_pos2.x - p_pos1.x;
+        const int par_c = p_pos1.x * p_pos2.y - p_pos2.x * p_pos1.y;
+        draw_line(image, p_pos1, p_pos2, par_a, par_b, par_c);
+    }
+
+    p_pos1 = sf::Vector2i(pos2.x + yPerp, pos2.y - xPerp);
+    p_pos2 = sf::Vector2i(pos2.x - yPerp, pos2.y + xPerp);
+    const int par_a = p_pos1.y - p_pos2.y;
+    const int par_b = p_pos2.x - p_pos1.x;
+    const int par_c = p_pos1.x * p_pos2.y - p_pos2.x * p_pos1.y;
+    draw_line(image, p_pos1, p_pos2, par_a, par_b, par_c);
+
+    circle(image, pos1);
 }
 
 int main() {
@@ -116,15 +132,15 @@ int main() {
 
     sf::Sprite sprite;
     sprite.setTexture(texture);
-
+    brush_color = ImColor(1, 1, 1);
     sf::Vector2i prev_pos(0, 0);
     bool left_pressed = false;
     bool pressed = false;
     auto image = texture.copyToImage();
-    line(image, sf::Vector2i(10, 100), sf::Vector2i(50, 100));
     texture.loadFromImage(image);
     sf::Vector2i prev_move_pos(0, 0);
     sf::Clock deltaClock;
+
     while(window.isOpen()) {
         sf::Event event{};
         while(window.pollEvent(event)) {
@@ -143,6 +159,8 @@ tex_pos.x = (int)((float)tex_pos.x / sprite.getScale().x);
 tex_pos.y = (int)((float)tex_pos.y / sprite.getScale().y);
                     prev_move_pos = tex_pos;
                     left_pressed = true;
+                    circle(image, tex_pos);
+                    texture.loadFromImage(image);
                 }
             }
             else if(event.type == sf::Event::MouseButtonReleased) {
@@ -184,6 +202,8 @@ tex_pos.y = (int)((float)tex_pos.y / sprite.getScale().y);
         window.draw(sprite);
         ImGui::Begin("Lol");
         ImGui::Text("Hello");
+        ImGui::SliderInt("Radius of line", &radius, 0, 100);
+        ImGui::ColorPicker3("Brush color", &brush_color.Value.x);
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::End();
         ImGui::SFML::Render(window);
