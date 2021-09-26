@@ -87,8 +87,6 @@ void line(Canvas& canvas, const sf::Vector2i& pos1, const sf::Vector2i& pos2) {
     const float normX = dx / dist;
     const float normY = dy / dist;
 
-    const int xPerp = radius * normX;
-    const int yPerp = radius * normY;
 
     sf::Vector2i p_pos1;
     sf::Vector2i p_pos2;
@@ -101,39 +99,50 @@ void line(Canvas& canvas, const sf::Vector2i& pos1, const sf::Vector2i& pos2) {
     {
         int curr_y = calculate_y_from_x(pos1.x + i, a, b, c);
         for(int j = prev_y; std::abs(curr_y - j) > 0; j += sgn_y) {
+            for(int z = 0; z <= radius; z++) {
 
-            p_pos1 = sf::Vector2i(pos1.x + i + yPerp, j - xPerp);
-            p_pos2 = sf::Vector2i(pos1.x + i - yPerp, j + xPerp);
-            const int par_a = p_pos1.y - p_pos2.y;
-            const int par_b = p_pos2.x - p_pos1.x;
-            const int par_c = p_pos1.x * p_pos2.y - p_pos2.x * p_pos1.y;
-            draw_line(canvas, p_pos1, p_pos2, par_a, par_b, par_c);
+                const int xPerp = z * normX;
+                const int yPerp = z * normY;
+                p_pos1 = sf::Vector2i(pos1.x + i + yPerp, j - xPerp);
+                p_pos2 = sf::Vector2i(pos1.x + i - yPerp, j + xPerp);
+                canvas.setPixel(p_pos1.x, p_pos1.y, sf::Color::White, true);
+                canvas.setPixel(p_pos2.x, p_pos2.y, sf::Color::White, true);
+            }
         }
 
-        p_pos1 = sf::Vector2i(pos1.x + i + yPerp, curr_y - xPerp);
-        p_pos2 = sf::Vector2i(pos1.x + i - yPerp, curr_y + xPerp);
-        const int par_a = p_pos1.y - p_pos2.y;
-        const int par_b = p_pos2.x - p_pos1.x;
-        const int par_c = p_pos1.x * p_pos2.y - p_pos2.x * p_pos1.y;
-        draw_line(canvas, p_pos1, p_pos2, par_a, par_b, par_c);
+        for(int z = 0; z <= radius; z++) {
+
+            const int xPerp = z * normX;
+            const int yPerp = z * normY;
+            p_pos1 = sf::Vector2i(pos1.x + i + yPerp, curr_y - xPerp);
+            p_pos2 = sf::Vector2i(pos1.x + i - yPerp, curr_y + xPerp);
+            canvas.setPixel(p_pos1.x, p_pos1.y, sf::Color::White, true);
+            canvas.setPixel(p_pos2.x, p_pos2.y, sf::Color::White, true);
+        }
         prev_y = curr_y;
     }
     for(int j = prev_y; std::abs(pos2.y - j) > 0; j += sgn_y) {
 
-        p_pos1 = sf::Vector2i(pos2.x + yPerp, j - xPerp);
-        p_pos2 = sf::Vector2i(pos2.x - yPerp, j + xPerp);
-        const int par_a = p_pos1.y - p_pos2.y;
-        const int par_b = p_pos2.x - p_pos1.x;
-        const int par_c = p_pos1.x * p_pos2.y - p_pos2.x * p_pos1.y;
-        draw_line(canvas, p_pos1, p_pos2, par_a, par_b, par_c);
+        for(int z = 0; z <= radius; z++) {
+
+            const int xPerp = z * normX;
+            const int yPerp = z * normY;
+            p_pos1 = sf::Vector2i(pos2.x + yPerp, j - xPerp);
+            p_pos2 = sf::Vector2i(pos2.x - yPerp, j + xPerp);
+            canvas.setPixel(p_pos1.x, p_pos1.y, sf::Color::White, true);
+            canvas.setPixel(p_pos2.x, p_pos2.y, sf::Color::White, true);
+        }
     }
 
-    p_pos1 = sf::Vector2i(pos2.x + yPerp, pos2.y - xPerp);
-    p_pos2 = sf::Vector2i(pos2.x - yPerp, pos2.y + xPerp);
-    const int par_a = p_pos1.y - p_pos2.y;
-    const int par_b = p_pos2.x - p_pos1.x;
-    const int par_c = p_pos1.x * p_pos2.y - p_pos2.x * p_pos1.y;
-    draw_line(canvas, p_pos1, p_pos2, par_a, par_b, par_c);
+    for(int z = 0; z <= radius; z++) {
+
+        const int xPerp = z * normX;
+        const int yPerp = z * normY;
+        p_pos1 = sf::Vector2i(pos2.x + yPerp, pos2.y - xPerp);
+        p_pos2 = sf::Vector2i(pos2.x - yPerp, pos2.y + xPerp);
+        canvas.setPixel(p_pos1.x, p_pos1.y, sf::Color::White, true);
+        canvas.setPixel(p_pos2.x, p_pos2.y, sf::Color::White, true);
+    }
 
     circle(canvas, pos1, true);
     circle(canvas, pos2, true);
