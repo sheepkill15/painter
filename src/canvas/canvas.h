@@ -14,7 +14,7 @@ public:
     explicit Canvas(const char* file, const sf::Vector2i& size = sf::Vector2i(0, 0));
     ~Canvas();
 
-    void setPixel(const sf::Vector2i& pos, const sf::Color& col);
+//    void setPixel(const sf::Vector2i& pos, const sf::Color& col);
 //    void setPixel(int x, int y, const sf::Color& col);
 //    void setPixel(int x, int y, const sf::Color& col, bool transformed);
 //    void apply();
@@ -31,9 +31,20 @@ public:
     static sf::Vector2i transform_pos(const sf::Vector2i& original, const sf::Vector2i& offset, float scale);
 
     void draw(sf::Shape& drawable, const sf::Vector2i& pos);
+    void draw(sf::Shape& drawable, const sf::Vector2i& pos, sf::Shader& shader);
+
+    void preview(sf::Shape& drawable, const sf::Vector2i& pos, bool clear = true);
+    void preview(sf::Shape& drawable, const sf::Vector2i& pos, sf::Shader& shader, bool clear = true);
+
+    void apply_preview();
+
+    void add_layer();
+
+    void DrawUI();
 
 private:
     std::list<Layer> _layers;
+    Layer m_PreviewLayer;
     sf::Vector2i _offset = sf::Vector2i(0, 0);
     sf::Vector2i _size = sf::Vector2i(0, 0);
     float _scale = 1;

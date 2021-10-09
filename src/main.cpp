@@ -2,7 +2,8 @@
 #include <SFML/Graphics.hpp>
 #include <imgui.h>
 #include <imgui-SFML.h>
-#include <brush/pencilbrush.h>
+#include <glad/glad.h>
+#include "brush/pencilbrush.h"
 #include "canvas/canvas.h"
 
 
@@ -12,8 +13,10 @@ int main() {
 
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 //    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable some options
-
+    window.setActive();
+    gladLoadGL();
     ImGui::SFML::Init(window);
 
     Canvas canvas("res/random.jpg");
@@ -23,10 +26,8 @@ int main() {
     bool pressed = false;
 
     sf::Clock deltaClock;
-    sf::Vector2i size = canvas.getSize();
-
-    PencilBrush brush(canvas);
-
+    std::unique_ptr<Brush> brush = std::make_unique<PencilBrush>(canvas);
+    Brush::initShader();
     while(window.isOpen()) {
         sf::Event event{};
         while(window.pollEvent(event)) {
@@ -41,7 +42,7 @@ int main() {
                 } else if(event.mouseButton.button == sf::Mouse::Left) {
                     sf::Vector2i tex_pos = sf::Mouse::getPosition(window);
                     left_pressed = true;
-                    brush.onMouseDown(tex_pos);
+                    brush->onMouseDown(tex_pos);
                 }
             }
             else if(event.type == sf::Event::MouseButtonReleased) {
@@ -49,6 +50,8 @@ int main() {
                     pressed = false;
                 } else if(event.mouseButton.button == sf::Mouse::Left) {
                     left_pressed = false;
+                    sf::Vector2i tex_pos = sf::Mouse::getPosition(window);
+                    brush->onMouseUp(tex_pos);
                 }
             }
             else if(event.type == sf::Event::MouseMoved) {
@@ -58,7 +61,7 @@ int main() {
                     prev_pos = tex_pos;
                 } else if(left_pressed) {
                     sf::Vector2i tex_pos = sf::Mouse::getPosition(window);
-                    brush.onMouseMoved(tex_pos);
+                    brush->onMouseMoved(tex_pos);
                 }
             }
             else if(event.type == sf::Event::MouseWheelScrolled) {
@@ -77,17 +80,19 @@ int main() {
         window.clear(sf::Color::Black);
 
         canvas.draw(window);
-        ImGui::Begin("Lol");
-        ImGui::Text("Hello");
-        ImGui::InputInt2("Size of canvas", &size.x);
-        if(ImGui::Button("Commit size (resize)")) {
-            canvas.resize(size);
-        }
-        ImGui::SliderInt("Radius of line", &brush.settings.size, 0, 100);
+        brush->settings.DrawUI();
+        canvas.DrawUI();
 
-        ImGui::SliderScalarN("Brush color", ImGuiDataType_U8, &brush.settings.color.r, 4, &sf::Color::Black.r, &sf::Color::White.r);
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::Begin("Brushes");
+        if(ImGui::Button("Pencil")) {
+            brush = std::make_unique<PencilBrush>(canvas);
+        }
+
+        if(ImGui::Button("Line")) {
+
+        }
         ImGui::End();
+
         ImGui::SFML::Render(window);
 
         window.display();

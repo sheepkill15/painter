@@ -4,12 +4,17 @@
 
 #include <iostream>
 #include <utils/utils.h>
+#include <imgui.h>
+#include <sstream>
+#include <glad/glad.h>
+//#include <SFML/OpenGL.hpp>
 #include "canvas.h"
 
-Canvas::Canvas(const char* file, const sf::Vector2i &size) {
+Canvas::Canvas(const char* file, const sf::Vector2i &size) : m_PreviewLayer() {
     _layers.emplace_back();
-    _selected = &_layers.front();
+    _selected = &_layers.back();
     auto& renderTexture = _selected->second;
+
     if(file != nullptr) {
         sf::Image newImage;
         newImage.loadFromFile(file);
@@ -27,27 +32,37 @@ Canvas::Canvas(const char* file, const sf::Vector2i &size) {
 
     auto& sprite = _selected->first;
     sprite.setTexture(renderTexture.getTexture());
+
+    m_PreviewLayer.second.create(_size.x, _size.y);
+    m_PreviewLayer.second.clear(sf::Color::Transparent);
+    m_PreviewLayer.first.setTexture(m_PreviewLayer.second.getTexture(), true);
 }
 
-Canvas::~Canvas() {
-
-}
+Canvas::~Canvas() = default;
 
 void Canvas::draw(sf::RenderWindow &window) {
-    _selected->second.display();
-    window.draw(std::get<0>(*_selected));
+    for(auto & _layer : _layers) {
+        _layer.second.display();
+        window.draw(std::get<0>(_layer));
+    }
+    m_PreviewLayer.second.display();
+    window.draw(m_PreviewLayer.first);
 }
 
 void Canvas::resize(sf::Vector2i new_size) {
-
-    auto img = _selected->second.getTexture().copyToImage();
-    img = Utils::resize(img, (sf::Vector2u)new_size);
-    _selected->second.create(new_size.x, new_size.y);
-    auto newTexture = sf::Texture();
-    newTexture.loadFromImage(img);
-    auto newSprite = sf::Sprite(newTexture);
-    _selected->second.draw(newSprite);
-    _selected->first.setTexture(_selected->second.getTexture(), true);
+    for(auto& layer : _layers) {
+        auto img = layer.second.getTexture().copyToImage();
+        img = Utils::resize(img, (sf::Vector2u)new_size);
+        layer.second.create(new_size.x, new_size.y);
+        auto newTexture = sf::Texture();
+        newTexture.loadFromImage(img);
+        auto newSprite = sf::Sprite(newTexture);
+        layer.second.draw(newSprite);
+        layer.first.setTexture(layer.second.getTexture(), true);
+    }
+    m_PreviewLayer.second.create(new_size.x, new_size.y);
+    m_PreviewLayer.second.clear(sf::Color::Transparent);
+    m_PreviewLayer.first.setTexture(m_PreviewLayer.second.getTexture(), true);
     _size = new_size;
 }
 
@@ -56,6 +71,7 @@ void Canvas::move(const sf::Vector2i &amount) {
         auto& sprite = std::get<0>(layer);
         sprite.move((sf::Vector2f) amount);
     }
+    m_PreviewLayer.first.move((sf::Vector2f)amount);
     _offset += amount;
 }
 
@@ -64,6 +80,7 @@ void Canvas::scale(float amount) {
         auto& sprite = std::get<0>(layer);
         sprite.scale(1 + amount / 10.f, 1 + amount / 10.f);
     }
+    m_PreviewLayer.first.scale(1 + amount / 10.f, 1 + amount / 10.f);
     _scale *= 1 + amount / 10.f;
 }
 
@@ -76,8 +93,96 @@ sf::Vector2i Canvas::transform_pos(const sf::Vector2i &pos) {
 }
 
 void Canvas::draw(sf::Shape &drawable, const sf::Vector2i &pos) {
-
     auto& renderTexture = _selected->second;
     drawable.setPosition((sf::Vector2f)transform_pos(pos));
     renderTexture.draw(drawable);
+}
+
+void Canvas::DrawUI() {
+    ImGui::Begin("Canvas Settings");
+    ImGui::InputInt2("Size of canvas", &_size.x);
+    if(ImGui::Button("Commit size (resize)")) {
+        resize(_size);
+    }
+    int i = 0;
+    std::string label = "Layer";
+    for(auto& layer : _layers) {
+        std::stringstream ss;
+        ss << label << i++;
+        if(ImGui::Button(ss.str().c_str())) {
+            _selected = &layer;
+        }
+    }
+    if(ImGui::Button("Add Layer")) {
+        add_layer();
+    }
+    ImGui::End();
+}
+
+void Canvas::add_layer() {
+    _layers.emplace_back();
+    _selected = &_layers.back();
+    auto& renderTexture = _selected->second;
+
+    auto size = _size;
+    renderTexture.create(size.x, size.y);
+    renderTexture.clear(sf::Color::Transparent);
+
+    auto& sprite = _selected->first;
+    sprite.setTexture(renderTexture.getTexture(), true);
+    sprite.setPosition((sf::Vector2f)_offset);
+    sprite.setScale(sf::Vector2f(_scale, _scale));
+}
+
+void Canvas::draw(sf::Shape &drawable, const sf::Vector2i &pos, sf::Shader& shader) {
+    auto& renderTexture = _selected->second;
+    drawable.setPosition((sf::Vector2f)transform_pos(pos));
+    sf::Shader::bind(&shader);
+    renderTexture.draw(drawable);
+    sf::Shader::bind(nullptr);
+}
+
+void Canvas::preview(sf::Shape &drawable, const sf::Vector2i &pos, bool clear) {
+    if(clear) {
+        m_PreviewLayer.second.clear(sf::Color::Transparent);
+    }
+    drawable.setPosition((sf::Vector2f)transform_pos(pos));
+    auto state = sf::RenderStates(sf::BlendAlpha);
+    m_PreviewLayer.second.pushGLStates();
+    m_PreviewLayer.second.setActive(true);
+    glBlendEquationSeparate(GL_MAX, GL_MAX);
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+    m_PreviewLayer.second.draw(drawable, state);
+    m_PreviewLayer.second.setActive(false);
+//    glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+    m_PreviewLayer.second.popGLStates();
+}
+
+void Canvas::preview(sf::Shape &drawable, const sf::Vector2i &pos, sf::Shader &shader, bool clear) {
+    if(clear) {
+        m_PreviewLayer.second.clear(sf::Color::Transparent);
+    }
+    drawable.setPosition((sf::Vector2f)transform_pos(pos));
+    m_PreviewLayer.second.pushGLStates();
+    sf::Shader::bind(&shader);
+m_PreviewLayer.second.setActive(true);
+    glBlendEquationSeparate(GL_MAX, GL_MAX);
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+m_PreviewLayer.second.draw(drawable);
+    m_PreviewLayer.second.setActive(false);
+//    glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+    m_PreviewLayer.second.popGLStates();
+    sf::Shader::bind(nullptr);
+}
+
+void Canvas::apply_preview() {
+    auto& renderTexture = _selected->second;
+    auto oldPos = m_PreviewLayer.first.getPosition();
+    auto oldScale = m_PreviewLayer.first.getScale();
+    m_PreviewLayer.first.setPosition((sf::Vector2f) transform_pos((sf::Vector2i)oldPos));
+    m_PreviewLayer.first.setScale(1, 1);
+    renderTexture.draw(m_PreviewLayer.first);
+    m_PreviewLayer.second.clear(sf::Color::Transparent);
+    m_PreviewLayer.first.setPosition(oldPos);
+    m_PreviewLayer.first.setScale(oldScale);
 }
