@@ -7,10 +7,9 @@
 #include <imgui.h>
 #include <sstream>
 #include <glad/glad.h>
-//#include <SFML/OpenGL.hpp>
 #include "canvas.h"
 
-Canvas::Canvas(const char* file, const sf::Vector2i &size) : m_PreviewLayer() {
+Canvas::Canvas(const char* file, const sf::Vector2u &size) : m_PreviewLayer() {
     _layers.emplace_back();
     _selected = &_layers.back();
     auto& renderTexture = _selected->second;
@@ -21,14 +20,14 @@ Canvas::Canvas(const char* file, const sf::Vector2i &size) : m_PreviewLayer() {
         sf::Texture texture;
         texture.loadFromImage(newImage);
         sf::Sprite sprite(texture);
-        renderTexture.create(std::max((unsigned int)size.x, texture.getSize().x), std::max((unsigned int)size.y, texture.getSize().y));
+        renderTexture.create(std::max(size.x, texture.getSize().x), std::max(size.y, texture.getSize().y));
         renderTexture.clear(sf::Color::White);
         renderTexture.draw(sprite);
     } else {
         renderTexture.create(size.x, size.y);
         renderTexture.clear(sf::Color::White);
     }
-    _size = (sf::Vector2i)renderTexture.getSize();
+    _size = renderTexture.getSize();
 
     auto& sprite = _selected->first;
     sprite.setTexture(renderTexture.getTexture());
@@ -49,10 +48,10 @@ void Canvas::draw(sf::RenderWindow &window) {
     window.draw(m_PreviewLayer.first);
 }
 
-void Canvas::resize(sf::Vector2i new_size) {
+void Canvas::resize(const sf::Vector2u& new_size) {
     for(auto& layer : _layers) {
         auto img = layer.second.getTexture().copyToImage();
-        img = Utils::resize(img, (sf::Vector2u)new_size);
+        img = Utils::resize(img, new_size);
         layer.second.create(new_size.x, new_size.y);
         auto newTexture = sf::Texture();
         newTexture.loadFromImage(img);
@@ -66,12 +65,12 @@ void Canvas::resize(sf::Vector2i new_size) {
     _size = new_size;
 }
 
-void Canvas::move(const sf::Vector2i &amount) {
+void Canvas::move(const sf::Vector2f &amount) {
     for(auto& layer : _layers) {
         auto& sprite = std::get<0>(layer);
-        sprite.move((sf::Vector2f) amount);
+        sprite.move(amount);
     }
-    m_PreviewLayer.first.move((sf::Vector2f)amount);
+    m_PreviewLayer.first.move(amount);
     _offset += amount;
 }
 
@@ -84,23 +83,23 @@ void Canvas::scale(float amount) {
     _scale *= 1 + amount / 10.f;
 }
 
-sf::Vector2i Canvas::transform_pos(const sf::Vector2i &original, const sf::Vector2i &offset, float scale) {
-    return {static_cast<int>((float)(original.x - offset.x) / scale), static_cast<int>((float)(original.y - offset.y) / scale)};
+sf::Vector2f Canvas::transform_pos(const sf::Vector2f &original, const sf::Vector2f &offset, float scale) {
+    return {static_cast<float >((original.x - offset.x) / scale), static_cast<float >((original.y - offset.y) / scale)};
 }
 
-sf::Vector2i Canvas::transform_pos(const sf::Vector2i &pos) {
+sf::Vector2f Canvas::transform_pos(const sf::Vector2f &pos) {
     return transform_pos(pos, _offset, _scale);
 }
 
-void Canvas::draw(sf::Shape &drawable, const sf::Vector2i &pos) {
+void Canvas::draw(sf::Shape &drawable, const sf::Vector2f &pos) {
     auto& renderTexture = _selected->second;
-    drawable.setPosition((sf::Vector2f)transform_pos(pos));
+    drawable.setPosition(transform_pos(pos));
     renderTexture.draw(drawable);
 }
 
 void Canvas::DrawUI() {
     ImGui::Begin("Canvas Settings");
-    ImGui::InputInt2("Size of canvas", &_size.x);
+    ImGui::InputInt2("Size of canvas", reinterpret_cast<int *>(&_size.x));
     if(ImGui::Button("Commit size (resize)")) {
         resize(_size);
     }
@@ -130,23 +129,23 @@ void Canvas::add_layer() {
 
     auto& sprite = _selected->first;
     sprite.setTexture(renderTexture.getTexture(), true);
-    sprite.setPosition((sf::Vector2f)_offset);
+    sprite.setPosition(_offset);
     sprite.setScale(sf::Vector2f(_scale, _scale));
 }
 
-void Canvas::draw(sf::Shape &drawable, const sf::Vector2i &pos, sf::Shader& shader) {
+void Canvas::draw(sf::Shape &drawable, const sf::Vector2f &pos, sf::Shader& shader) {
     auto& renderTexture = _selected->second;
-    drawable.setPosition((sf::Vector2f)transform_pos(pos));
+    drawable.setPosition(transform_pos(pos));
     sf::Shader::bind(&shader);
     renderTexture.draw(drawable);
     sf::Shader::bind(nullptr);
 }
 
-void Canvas::preview(sf::Shape &drawable, const sf::Vector2i &pos, bool clear) {
+void Canvas::preview(sf::Shape &drawable, const sf::Vector2f &pos, bool clear) {
     if(clear) {
         m_PreviewLayer.second.clear(sf::Color::Transparent);
     }
-    drawable.setPosition((sf::Vector2f)transform_pos(pos));
+    drawable.setPosition(transform_pos(pos));
     auto state = sf::RenderStates(sf::BlendAlpha);
     m_PreviewLayer.second.pushGLStates();
     m_PreviewLayer.second.setActive(true);
@@ -158,11 +157,11 @@ void Canvas::preview(sf::Shape &drawable, const sf::Vector2i &pos, bool clear) {
     m_PreviewLayer.second.popGLStates();
 }
 
-void Canvas::preview(sf::Shape &drawable, const sf::Vector2i &pos, sf::Shader &shader, bool clear) {
+void Canvas::preview(sf::Shape &drawable, const sf::Vector2f &pos, sf::Shader &shader, bool clear) {
     if(clear) {
         m_PreviewLayer.second.clear(sf::Color::Transparent);
     }
-    drawable.setPosition((sf::Vector2f)transform_pos(pos));
+    drawable.setPosition(transform_pos(pos));
     m_PreviewLayer.second.pushGLStates();
     sf::Shader::bind(&shader);
 m_PreviewLayer.second.setActive(true);
@@ -179,10 +178,14 @@ void Canvas::apply_preview() {
     auto& renderTexture = _selected->second;
     auto oldPos = m_PreviewLayer.first.getPosition();
     auto oldScale = m_PreviewLayer.first.getScale();
-    m_PreviewLayer.first.setPosition((sf::Vector2f) transform_pos((sf::Vector2i)oldPos));
+    m_PreviewLayer.first.setPosition(transform_pos(oldPos));
     m_PreviewLayer.first.setScale(1, 1);
     renderTexture.draw(m_PreviewLayer.first);
     m_PreviewLayer.second.clear(sf::Color::Transparent);
     m_PreviewLayer.first.setPosition(oldPos);
     m_PreviewLayer.first.setScale(oldScale);
+}
+
+sf::Vector2f Canvas::flip_vertical(const sf::Vector2f &pos) const {
+    return {pos.x, static_cast<float>(_size.y) - pos.y};
 }

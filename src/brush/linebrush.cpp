@@ -4,14 +4,14 @@
 
 #include "linebrush.h"
 
-void LineBrush::onMouseDown(const sf::Vector2i &pos) {
+void LineBrush::onMouseDown(const sf::Vector2f &pos) {
 
 }
 
-void LineBrush::onMouseUp(const sf::Vector2i &pos) {
+void LineBrush::onMouseUp(const sf::Vector2f &pos) {
 
 }
 
-void LineBrush::onMouseMoved(const sf::Vector2i &pos) {
+void LineBrush::onMouseMoved(const sf::Vector2f &pos) {
 
 }

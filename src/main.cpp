@@ -21,7 +21,7 @@ int main() {
 
     Canvas canvas("res/random.jpg");
 
-    sf::Vector2i prev_pos(0, 0);
+    sf::Vector2f prev_pos(0, 0);
     bool left_pressed = false;
     bool pressed = false;
 
@@ -37,10 +37,10 @@ int main() {
             if(io.WantCaptureMouse) continue;
             if(event.type == sf::Event::MouseButtonPressed) {
                 if(event.mouseButton.button == sf::Mouse::Middle) {
-                    prev_pos = sf::Mouse::getPosition(window);
+                    prev_pos = static_cast<sf::Vector2f>(sf::Mouse::getPosition(window));
                     pressed = true;
                 } else if(event.mouseButton.button == sf::Mouse::Left) {
-                    sf::Vector2i tex_pos = sf::Mouse::getPosition(window);
+                    sf::Vector2f tex_pos = static_cast<sf::Vector2f>(sf::Mouse::getPosition(window));
                     left_pressed = true;
                     brush->onMouseDown(tex_pos);
                 }
@@ -50,17 +50,17 @@ int main() {
                     pressed = false;
                 } else if(event.mouseButton.button == sf::Mouse::Left) {
                     left_pressed = false;
-                    sf::Vector2i tex_pos = sf::Mouse::getPosition(window);
+                    sf::Vector2f tex_pos = static_cast<sf::Vector2f>(sf::Mouse::getPosition(window));
                     brush->onMouseUp(tex_pos);
                 }
             }
             else if(event.type == sf::Event::MouseMoved) {
                 if(pressed) {
-                    sf::Vector2i tex_pos = sf::Mouse::getPosition(window);
+                    sf::Vector2f tex_pos = static_cast<sf::Vector2f>(sf::Mouse::getPosition(window));
                     canvas.move({(tex_pos.x - prev_pos.x), (tex_pos.y - prev_pos.y)});
                     prev_pos = tex_pos;
                 } else if(left_pressed) {
-                    sf::Vector2i tex_pos = sf::Mouse::getPosition(window);
+                    sf::Vector2f tex_pos = static_cast<sf::Vector2f>(sf::Mouse::getPosition(window));
                     brush->onMouseMoved(tex_pos);
                 }
             }

@@ -17,21 +17,14 @@ public:
     ~PencilBrush() override;
 
     explicit PencilBrush(Canvas& canvas);
-    void onMouseDown(const sf::Vector2i &pos) override;
+    void onMouseDown(const sf::Vector2f &pos) override;
 
-    void onMouseUp(const sf::Vector2i& pos) override;
+    void onMouseUp(const sf::Vector2f& pos) override;
 
-    void onMouseMoved(const sf::Vector2i &pos) override;
+    void onMouseMoved(const sf::Vector2f &pos) override;
 
 private:
-//
-//    void updateOffset(const sf::Vector2i& pos);
-//
-//    sf::Vector2i _offset{0, 0};
-    sf::Vector2i _prevPos{0, 0};
-
-//    sf::Vector2i _prevPos1{0,0};
-//    sf::Vector2i _prevPos2{0,0};
+    sf::Vector2f _prevPos{0, 0};
 };
 
 

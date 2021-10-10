@@ -11,30 +11,25 @@
 using Layer = std::pair<sf::Sprite, sf::RenderTexture>;
 class Canvas {
 public:
-    explicit Canvas(const char* file, const sf::Vector2i& size = sf::Vector2i(0, 0));
+    explicit Canvas(const char* file, const sf::Vector2u& size = sf::Vector2u(0, 0));
     ~Canvas();
 
-//    void setPixel(const sf::Vector2i& pos, const sf::Color& col);
-//    void setPixel(int x, int y, const sf::Color& col);
-//    void setPixel(int x, int y, const sf::Color& col, bool transformed);
-//    void apply();
-//    void apply(const sf::Image& newImage, const sf::Vector2i& offset);
     void draw(sf::RenderWindow& window);
 
-    void resize(sf::Vector2i new_size);
+    void resize(const sf::Vector2u& new_size);
 
-    [[nodiscard]] inline const sf::Vector2i& getSize() const { return _size; }
+    [[nodiscard]] inline const sf::Vector2u& getSize() const { return _size; }
 
-    void move(const sf::Vector2i& amount);
+    void move(const sf::Vector2f& amount);
     void scale(float amount);
-    sf::Vector2i  transform_pos(const sf::Vector2i& pos);
-    static sf::Vector2i transform_pos(const sf::Vector2i& original, const sf::Vector2i& offset, float scale);
+    sf::Vector2f  transform_pos(const sf::Vector2f& pos);
+    static sf::Vector2f transform_pos(const sf::Vector2f& original, const sf::Vector2f& offset, float scale);
 
-    void draw(sf::Shape& drawable, const sf::Vector2i& pos);
-    void draw(sf::Shape& drawable, const sf::Vector2i& pos, sf::Shader& shader);
+    void draw(sf::Shape& drawable, const sf::Vector2f& pos);
+    void draw(sf::Shape& drawable, const sf::Vector2f& pos, sf::Shader& shader);
 
-    void preview(sf::Shape& drawable, const sf::Vector2i& pos, bool clear = true);
-    void preview(sf::Shape& drawable, const sf::Vector2i& pos, sf::Shader& shader, bool clear = true);
+    void preview(sf::Shape& drawable, const sf::Vector2f& pos, bool clear = true);
+    void preview(sf::Shape& drawable, const sf::Vector2f& pos, sf::Shader& shader, bool clear = true);
 
     void apply_preview();
 
@@ -42,11 +37,13 @@ public:
 
     void DrawUI();
 
+    sf::Vector2f flip_vertical(const sf::Vector2f& pos) const;
+
 private:
     std::list<Layer> _layers;
     Layer m_PreviewLayer;
-    sf::Vector2i _offset = sf::Vector2i(0, 0);
-    sf::Vector2i _size = sf::Vector2i(0, 0);
+    sf::Vector2f _offset = sf::Vector2f(0, 0);
+    sf::Vector2u _size = sf::Vector2u(0, 0);
     float _scale = 1;
     Layer* _selected;
 };

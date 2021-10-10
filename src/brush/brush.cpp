@@ -7,16 +7,11 @@
 #include <imgui.h>
 #include <iostream>
 #include "canvas/canvas.h"
-#include "shapes/lineshape.h"
 #include "brush.h"
 
 Brush::Brush(Canvas &canvas) {
     setCanvas(canvas);
 }
-//
-//int calculate_y_from_x(int x, int a, int b, int c) {
-//    return (-x * a - c) / b;
-//}
 
 void Brush::setCanvas(Canvas &canvas) {
     _canvas = &canvas;
@@ -24,7 +19,7 @@ void Brush::setCanvas(Canvas &canvas) {
 
 void BrushSettings::DrawUI() {
     ImGui::Begin("Brush settings");
-    ImGui::SliderInt("Radius of line", &size, 0, 100);
+    ImGui::SliderFloat("Radius of line", &size, 0, 100);
     ImGui::SliderInt("Feathering amount", &feathering, 0, 100);
     ImGui::SliderScalarN("Brush color", ImGuiDataType_U8, &color.r, 4, &sf::Color::Black.r, &sf::Color::White.r);
     ImGui::End();
@@ -81,7 +76,7 @@ void Brush::initShader() {
 void Brush::prepareForDraw(const sf::Vector2f& pos1, const sf::Vector2f& pos2, int type) {
     renderShader.setUniform("pt1", pos1);
     renderShader.setUniform("pt2", pos2);
-    renderShader.setUniform("radius", (float)settings.size);
-    renderShader.setUniform("feathering", (float)settings.feathering / 100.f);
+    renderShader.setUniform("radius", settings.size);
+    renderShader.setUniform("feathering", static_cast<float>(settings.feathering) / 100.f);
     renderShader.setUniform("type", type);
 }

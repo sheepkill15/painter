@@ -13,14 +13,14 @@ class LineBrush : public Brush {
 public:
     ~LineBrush() override = default;
 
-    void onMouseDown(const sf::Vector2i &pos) override;
+    void onMouseDown(const sf::Vector2f &pos) override;
 
-    void onMouseUp(const sf::Vector2i &pos) override;
+    void onMouseUp(const sf::Vector2f &pos) override;
 
-    void onMouseMoved(const sf::Vector2i &pos) override;
+    void onMouseMoved(const sf::Vector2f &pos) override;
 private:
-    sf::Vector2i m_FirstPos;
-    sf::Vector2i m_SecondPos;
+    sf::Vector2f m_FirstPos;
+    sf::Vector2f m_SecondPos;
 };
 
 
