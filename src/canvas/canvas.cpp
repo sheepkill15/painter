@@ -43,9 +43,11 @@ void Canvas::draw(sf::RenderWindow &window) {
     for(auto & _layer : _layers) {
         _layer.second.display();
         window.draw(std::get<0>(_layer));
+        if(&_layer == _selected) {
+            m_PreviewLayer.second.display();
+            window.draw(m_PreviewLayer.first);
+        }
     }
-    m_PreviewLayer.second.display();
-    window.draw(m_PreviewLayer.first);
 }
 
 void Canvas::resize(const sf::Vector2u& new_size) {
