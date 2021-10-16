@@ -13,7 +13,7 @@ void PencilBrush::onMouseDown(const sf::Vector2f &pos) {
 
     prepareForDraw(_canvas->flip_vertical(pos), sf::Vector2f(), 1);
 
-    _canvas->preview(circle, pos, renderShader, false);
+    _canvas->preview(circle, pos, false, &renderShader);
     _prevPos = pos;
 }
 
@@ -29,12 +29,12 @@ void PencilBrush::onMouseMoved(const sf::Vector2f &pos) {
     const auto pos2 = (sf::Vector2f)_canvas->transform_pos(pos);
     //    _canvas->draw(circle, pos);
     prepareForDraw(_canvas->flip_vertical(pos1), sf::Vector2f(), 1);
-    _canvas->preview(circle, pos, renderShader, false);
+    _canvas->preview(circle, pos, false, &renderShader);
     auto line = sf::LineShape(pos1, pos2);
     line.setThickness(settings.size * 2);
     line.setFillColor(settings.color);
     prepareForDraw(_canvas->flip_vertical(pos1), _canvas->flip_vertical(pos2), 0);
-    _canvas->preview(line, _prevPos, renderShader, false);
+    _canvas->preview(line, _prevPos, false, &renderShader);
     _prevPos = pos;
 }
 
