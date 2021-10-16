@@ -32,46 +32,51 @@ int main() {
         sf::Event event{};
         while(window.pollEvent(event)) {
             ImGui::SFML::ProcessEvent(event);
-            if(event.type == sf::Event::Closed)
-                window.close();
             if(io.WantCaptureMouse) continue;
-            if(event.type == sf::Event::MouseButtonPressed) {
-                if(event.mouseButton.button == sf::Mouse::Middle) {
-                    prev_pos = static_cast<sf::Vector2f>(sf::Mouse::getPosition(window));
-                    pressed = true;
-                } else if(event.mouseButton.button == sf::Mouse::Left) {
-                    const sf::Vector2f tex_pos = static_cast<sf::Vector2f>(sf::Mouse::getPosition(window));
-                    left_pressed = true;
-                    brush->onMouseDown(tex_pos);
-                }
-            }
-            else if(event.type == sf::Event::MouseButtonReleased) {
-                if(event.mouseButton.button == sf::Mouse::Middle) {
-                    pressed = false;
-                } else if(event.mouseButton.button == sf::Mouse::Left) {
-                    left_pressed = false;
-                    const sf::Vector2f tex_pos = static_cast<sf::Vector2f>(sf::Mouse::getPosition(window));
-                    brush->onMouseUp(tex_pos);
-                }
-            }
-            else if(event.type == sf::Event::MouseMoved) {
-                if(pressed) {
-                    const sf::Vector2f tex_pos = static_cast<sf::Vector2f>(sf::Mouse::getPosition(window));
-                    canvas.move({(tex_pos.x - prev_pos.x), (tex_pos.y - prev_pos.y)});
-                    prev_pos = tex_pos;
-                } else if(left_pressed) {
-                    const sf::Vector2f tex_pos = static_cast<sf::Vector2f>(sf::Mouse::getPosition(window));
-                    brush->onMouseMoved(tex_pos);
-                }
-            }
-            else if(event.type == sf::Event::MouseWheelScrolled) {
-                canvas.scale(event.mouseWheelScroll.delta);
-            }
-            else if (event.type == sf::Event::Resized)
-            {
-                // update the view to the new size of the window
-                const sf::FloatRect visibleArea(0, 0, (float)event.size.width, (float)event.size.height);
-                window.setView(sf::View(visibleArea));
+
+            switch(event.type) {
+                case sf::Event::MouseButtonPressed:
+                    if(event.mouseButton.button == sf::Mouse::Middle) {
+                        prev_pos = static_cast<sf::Vector2f>(sf::Mouse::getPosition(window));
+                        pressed = true;
+                    } else if(event.mouseButton.button == sf::Mouse::Left) {
+                        const sf::Vector2f tex_pos = static_cast<sf::Vector2f>(sf::Mouse::getPosition(window));
+                        left_pressed = true;
+                        brush->onMouseDown(tex_pos);
+                    }
+                    break;
+                case sf::Event::MouseButtonReleased:
+                    if(event.mouseButton.button == sf::Mouse::Middle) {
+                        pressed = false;
+                    } else if(event.mouseButton.button == sf::Mouse::Left) {
+                        left_pressed = false;
+                        const sf::Vector2f tex_pos = static_cast<sf::Vector2f>(sf::Mouse::getPosition(window));
+                        brush->onMouseUp(tex_pos);
+                    }
+                    break;
+                case sf::Event::MouseMoved:
+                    if(pressed) {
+                        const sf::Vector2f tex_pos = static_cast<sf::Vector2f>(sf::Mouse::getPosition(window));
+                        canvas.move({(tex_pos.x - prev_pos.x), (tex_pos.y - prev_pos.y)});
+                        prev_pos = tex_pos;
+                    } else if(left_pressed) {
+                        const sf::Vector2f tex_pos = static_cast<sf::Vector2f>(sf::Mouse::getPosition(window));
+                        brush->onMouseMoved(tex_pos);
+                    }
+                    break;
+                case sf::Event::MouseWheelScrolled:
+                    canvas.scale(event.mouseWheelScroll.delta);
+                    break;
+                case sf::Event::Resized:
+                    {
+                        // update the view to the new size of the window
+                        const sf::FloatRect visibleArea(0, 0, (float) event.size.width, (float) event.size.height);
+                        window.setView(sf::View(visibleArea));
+                    }
+                    break;
+                case sf::Event::Closed:
+                    window.close();
+                    break;
             }
         }
 
