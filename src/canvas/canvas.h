@@ -18,7 +18,7 @@ public:
 
     void resize(const sf::Vector2u& new_size);
 
-    [[nodiscard]] inline const sf::Vector2u& getSize() const { return _size; }
+    [[nodiscard("Use the size if requested")]] inline const sf::Vector2u& getSize() const { return _size; }
 
     void move(const sf::Vector2f& amount);
     void scale(float amount);
@@ -42,9 +42,9 @@ public:
 private:
     std::list<Layer> _layers;
     Layer m_PreviewLayer;
-    sf::Vector2f _offset = sf::Vector2f(0, 0);
-    sf::Vector2u _size = sf::Vector2u(0, 0);
-    float _scale = 1;
+    sf::Vector2f _offset{0, 0};
+    sf::Vector2u _size{0, 0};
+    float _scale{1};
     Layer* _selected;
 };
 
