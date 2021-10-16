@@ -86,7 +86,7 @@ void Canvas::scale(float amount) {
 }
 
 sf::Vector2f Canvas::transform_pos(const sf::Vector2f &original, const sf::Vector2f &offset, float scale) {
-    return {static_cast<float >((original.x - offset.x) / scale), static_cast<float >((original.y - offset.y) / scale)};
+    return {(original.x - offset.x) / scale, (original.y - offset.y) / scale};
 }
 
 sf::Vector2f Canvas::transform_pos(const sf::Vector2f &pos) {
@@ -106,7 +106,7 @@ void Canvas::DrawUI() {
         resize(_size);
     }
     int i = 0;
-    std::string label = "Layer";
+    const std::string label = "Layer";
     for(auto& layer : _layers) {
         std::stringstream ss;
         ss << label << i++;
@@ -125,8 +125,7 @@ void Canvas::add_layer() {
     _selected = &_layers.back();
     auto& renderTexture = _selected->second;
 
-    auto size = _size;
-    renderTexture.create(size.x, size.y);
+    renderTexture.create(_size.x, _size.y);
     renderTexture.clear(sf::Color::Transparent);
 
     auto& sprite = _selected->first;
@@ -148,14 +147,12 @@ void Canvas::preview(sf::Shape &drawable, const sf::Vector2f &pos, bool clear) {
         m_PreviewLayer.second.clear(sf::Color::Transparent);
     }
     drawable.setPosition(transform_pos(pos));
-    auto state = sf::RenderStates(sf::BlendAlpha);
     m_PreviewLayer.second.pushGLStates();
     m_PreviewLayer.second.setActive(true);
     glBlendEquationSeparate(GL_MAX, GL_MAX);
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
-    m_PreviewLayer.second.draw(drawable, state);
+    m_PreviewLayer.second.draw(drawable);
     m_PreviewLayer.second.setActive(false);
-//    glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
     m_PreviewLayer.second.popGLStates();
 }
 
@@ -166,12 +163,11 @@ void Canvas::preview(sf::Shape &drawable, const sf::Vector2f &pos, sf::Shader &s
     drawable.setPosition(transform_pos(pos));
     m_PreviewLayer.second.pushGLStates();
     sf::Shader::bind(&shader);
-m_PreviewLayer.second.setActive(true);
+    m_PreviewLayer.second.setActive(true);
     glBlendEquationSeparate(GL_MAX, GL_MAX);
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
-m_PreviewLayer.second.draw(drawable);
+    m_PreviewLayer.second.draw(drawable);
     m_PreviewLayer.second.setActive(false);
-//    glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
     m_PreviewLayer.second.popGLStates();
     sf::Shader::bind(nullptr);
 }

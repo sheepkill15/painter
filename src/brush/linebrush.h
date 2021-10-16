@@ -11,7 +11,6 @@
 
 class LineBrush : public Brush {
 public:
-    ~LineBrush() override = default;
 
     void onMouseDown(const sf::Vector2f &pos) override;
 

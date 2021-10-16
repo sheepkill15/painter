@@ -14,8 +14,6 @@ class PencilBrush : public Brush {
 public:
     PencilBrush() = default;
 
-    ~PencilBrush() override;
-
     explicit PencilBrush(Canvas& canvas);
     void onMouseDown(const sf::Vector2f &pos) override;
 

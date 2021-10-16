@@ -25,7 +25,6 @@ class Brush {
 public:
     Brush() = default;
     explicit Brush(Canvas& canvas);
-    virtual ~Brush() = default;
     virtual void onMouseDown(const sf::Vector2f& pos) = 0;
     virtual void onMouseUp(const sf::Vector2f& pos) = 0;
     virtual void onMouseMoved(const sf::Vector2f& pos) = 0;

@@ -28,7 +28,7 @@ void BrushSettings::DrawUI() {
 sf::Shader Brush::renderShader{};
 
 void Brush::initShader() {
-    const std::string fragmentShader = R"(
+    constexpr auto fragmentShader = R"(
 
     uniform float radius;
     uniform float feathering;
