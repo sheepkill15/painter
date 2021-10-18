@@ -5,7 +5,6 @@
 
 #include <cmath>
 #include <imgui.h>
-#include <iostream>
 #include "canvas/canvas.h"
 #include "brush.h"
 
@@ -54,7 +53,11 @@ void Brush::initShader() {
 
     float getValueBasedOnDistance(float distance)
     {
-        return 1 / pow(1 + feathering, distance);
+//        return 1 - exp(-feathering*(1 - distance)) * distance;
+        if(distance / radius > 1 - feathering) {
+            return 0.5;
+        }
+        return 1;
     }
 
     void main()
@@ -62,7 +65,7 @@ void Brush::initShader() {
         float res;
         switch(type) {
             case 0:
-                res = DistToLine(pt1, pt2, gl_FragCoord.xy) / (radius);
+                res = DistToLine(pt1, pt2, gl_FragCoord.xy) / (2*radius);
                 break;
             case 1:
                 res = DistToCircle(pt1, gl_FragCoord.xy) / (2*radius);

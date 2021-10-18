@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <imgui-SFML.h>
 #include <glad/glad.h>
+#include <brush/linebrush.h>
 #include "brush/pencilbrush.h"
 #include "canvas/canvas.h"
 
@@ -64,9 +65,11 @@ int main() {
                         brush->onMouseMoved(tex_pos);
                     }
                     break;
-                case sf::Event::MouseWheelScrolled:
-                    canvas.scale(event.mouseWheelScroll.delta);
+                case sf::Event::MouseWheelScrolled: {
+                    const auto pos = sf::Vector2f(event.mouseWheelScroll.x, event.mouseWheelScroll.y);
+                    canvas.scale(event.mouseWheelScroll.delta, (pos));
                     break;
+                }
                 case sf::Event::Resized:
                     {
                         // update the view to the new size of the window
@@ -94,7 +97,7 @@ int main() {
         }
 
         if(ImGui::Button("Line")) {
-
+            brush = std::make_unique<LineBrush>(canvas);
         }
         ImGui::End();
 

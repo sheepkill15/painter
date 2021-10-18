@@ -11,6 +11,7 @@
 
 class LineBrush : public Brush {
 public:
+    explicit LineBrush(Canvas &canvas);
 
     void onMouseDown(const sf::Vector2f &pos) override;
 
@@ -18,8 +19,8 @@ public:
 
     void onMouseMoved(const sf::Vector2f &pos) override;
 private:
-    sf::Vector2f m_FirstPos;
-    sf::Vector2f m_SecondPos;
+    sf::Vector2f m_FirstPos{0,0};
+    sf::Vector2f m_SecondPos{0,0};
 };
 
 

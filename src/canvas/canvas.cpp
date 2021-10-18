@@ -3,7 +3,6 @@
 //
 
 #include <iostream>
-#include <utils/utils.h>
 #include <imgui.h>
 #include <sstream>
 #include <glad/glad.h>
@@ -72,12 +71,16 @@ void Canvas::move(const sf::Vector2f &amount) {
     _offset += amount;
 }
 
-void Canvas::scale(float amount) {
+void Canvas::scale(float amount, const sf::Vector2f& origin) {
+    const float newFactor = 1 + amount / 10.f;
+    const float moveAmountX = static_cast<float>(origin.x) * (_scale) - static_cast<float>(origin.x) * (_scale * newFactor);
+    const float moveAmountY = static_cast<float>(origin.y) * (_scale) - static_cast<float>(origin.y) * (_scale * newFactor);
+    _scale *= newFactor;
     for(auto& [sprite, _] : _layers) {
-        sprite.scale(1 + amount / 10.f, 1 + amount / 10.f);
+        sprite.scale(newFactor, newFactor);
     }
-    m_PreviewLayer.first.scale(1 + amount / 10.f, 1 + amount / 10.f);
-    _scale *= 1 + amount / 10.f;
+    m_PreviewLayer.first.scale(newFactor, newFactor);
+    move(sf::Vector2f(moveAmountX, moveAmountY));
 }
 
 sf::Vector2f Canvas::transform_pos(const sf::Vector2f &original, const sf::Vector2f &offset, float scale) {

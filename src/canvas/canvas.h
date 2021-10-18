@@ -6,7 +6,6 @@
 #define PAINTER_CANVAS_H
 
 #include <list>
-#include <utility>
 #include <SFML/Graphics.hpp>
 using Layer = std::pair<sf::Sprite, sf::RenderTexture>;
 class Canvas {
@@ -21,7 +20,7 @@ public:
     inline const sf::Vector2u& getSize() const { return _size; }
 
     void move(const sf::Vector2f& amount);
-    void scale(float amount);
+    void scale(float amount, const sf::Vector2f& origin = sf::Vector2f(0, 0));
     sf::Vector2f  transform_pos(const sf::Vector2f& pos);
     static sf::Vector2f transform_pos(const sf::Vector2f& original, const sf::Vector2f& offset, float scale);
 
